@@ -8,6 +8,8 @@ import { useDispatch } from 'react-redux';
 import { login } from '@/redux/slices/authSlice';
 import { setCurrentUserEmail as setBookmarksEmail } from '@/redux/slices/bookmarksSlice';
 import { setCurrentUserEmail as setAppliedJobsEmail } from '@/redux/slices/appliedJobsSlice';
+import { setHydrated } from '@/redux/slices/authSlice';
+
 
 export default function AuthInitializer() {
   const dispatch = useDispatch();
@@ -22,6 +24,7 @@ export default function AuthInitializer() {
       dispatch(setBookmarksEmail(email));
       dispatch(setAppliedJobsEmail(email));
     }
+    dispatch(setHydrated(true));
   }, [dispatch]);
 
   return null; // No UI, only logic

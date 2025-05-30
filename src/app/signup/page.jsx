@@ -1,55 +1,69 @@
-'use client'; // Required to use hooks like useEffect in Next.js components
+'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation'; // Next.js router hook
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useDispatch } from 'react-redux';
 import Link from 'next/link';
-import { useDispatch, useSelector } from 'react-redux';
+import Cookies from 'js-cookie';
+
 import { login } from '@/redux/slices/authSlice';
 import { setCurrentUserEmail as setBookmarksUserEmail } from '@/redux/slices/bookmarksSlice';
 import { setCurrentUserEmail as setAppliedJobsUserEmail } from '@/redux/slices/appliedJobsSlice';
 
+// Utility functions to interact with localStorage users
+const getUsers = () => {
+  if (typeof window !== 'undefined') {
+    const storedUsers = localStorage.getItem('users');
+    return storedUsers ? JSON.parse(storedUsers) : [];
+  }
+  return [];
+};
+
+const saveUsers = (users) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('users', JSON.stringify(users));
+  }
+};
+
 export default function SignupPage() {
+  const router = useRouter();
+  const dispatch = useDispatch();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const router = useRouter();
-  const dispatch = useDispatch();
-  const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
 
+  // Redirect to dashboard if already authenticated (from cookie)
   useEffect(() => {
-    // Redirects to dashboard if already logged in (same as React V1)
-    if (isAuthenticated) {
-      router.push('/dashboard');
+    const isAuthenticated = Cookies.get('isAuthenticated');
+    if (isAuthenticated === 'true') {
+      router.replace('/dashboard');
     }
-  }, [isAuthenticated, router]);
+  }, [router]);
 
-  // Get all registered users from localStorage
+  // Get users list from localStorage
   const getUsers = () => {
     const usersData = localStorage.getItem('jobPortalUsers');
     return usersData ? JSON.parse(usersData) : [];
   };
 
-  // Save updated user list to localStorage
+  // Save updated users list to localStorage
   const saveUsers = (users) => {
     localStorage.setItem('jobPortalUsers', JSON.stringify(users));
   };
 
   const handleSignup = (e) => {
     e.preventDefault();
+
+    // Normalize email for case-insensitive comparison
     const normalizedEmail = email.trim().toLowerCase();
-
-    // Password check (same as V1)
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=~`[\]{}|\\:;"'<>,.?/]).{8,}$/;
-    if (!passwordRegex.test(password)) {
-      setError('Password must be at least 8 characters long and include 1 uppercase letter, 1 number, and 1 special character.');
-      return;
-    }
-
     const users = getUsers();
-    const existingUser = users.find(user => user.email === normalizedEmail);
+
+    // Check if user already exists
+    const existingUser = users.find((user) => user.email === normalizedEmail);
     if (existingUser) {
-      setError('Account already exists. Please log in instead.');
+      setError('User already exists. Please login.');
       return;
     }
 
@@ -58,26 +72,30 @@ export default function SignupPage() {
     users.push(newUser);
     saveUsers(users);
 
-    // Save session info to localStorage (same as V1)
-    localStorage.setItem('currentUserEmail', normalizedEmail);
-    localStorage.setItem('isAuthenticated', 'true');
-    setError('');
-
-    // Update Redux state
+    // Dispatch login and user-specific data to Redux
     dispatch(login(newUser));
     dispatch(setBookmarksUserEmail(normalizedEmail));
     dispatch(setAppliedJobsUserEmail(normalizedEmail));
 
+    // Store login info in cookies (for SSR checks) and localStorage
+    Cookies.set('isAuthenticated', 'true', { expires: 7, path: '/' });
+    Cookies.set('currentUserEmail', normalizedEmail, { expires: 7, path: '/' });
+
+    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem('currentUserEmail', normalizedEmail);
+
+    // Redirect to dashboard
     router.push('/dashboard');
   };
+
 
   return (
     <div className="min-h-screen bg-[#030342] flex items-center justify-center">
       <div className="bg-white/10 backdrop-blur-md p-10 rounded-2xl shadow-xl w-full max-w-md">
-        <h2 className="text-3xl font-bold text-white mb-6 text-center">Create an Account</h2>
+        <h2 className="text-3xl font-bold text-[#ebebf2] mb-6 text-center">Create Your Account</h2>
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
-            <label className="block text-white mb-1">Name</label>
+            <label className="block text-[#ebebf2] mb-1">Name</label>
             <input
               type="text"
               value={name}
@@ -90,7 +108,7 @@ export default function SignupPage() {
             />
           </div>
           <div>
-            <label className="block text-white mb-1">Email</label>
+            <label className="block text-[#ebebf2] mb-1">Email</label>
             <input
               type="email"
               value={email}
@@ -103,7 +121,7 @@ export default function SignupPage() {
             />
           </div>
           <div>
-            <label className="block text-white mb-1">Password</label>
+            <label className="block text-[#ebebf2] mb-1">Password</label>
             <input
               type="password"
               value={password}
@@ -123,11 +141,9 @@ export default function SignupPage() {
           </button>
         </form>
         {error && <p className="text-red-300 text-center mt-4">{error}</p>}
-        <p className="text-center text-sm text-white mt-4">
+        <p className="text-center text-sm text-[#ebebf2] mt-4">
           Already have an account?{' '}
-          <Link href="/login" className="text-blue-300 hover:underline">
-            Log in
-          </Link>
+          <Link href="/login" className="text-blue-300 hover:underline">Login</Link>
         </p>
       </div>
     </div>

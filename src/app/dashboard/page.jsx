@@ -1,30 +1,39 @@
-'use client'; // Enables client-side rendering
+'use client'; // Required for useRouter, useEffect, Redux hooks
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
-import { useRouter } from 'next/navigation'; // App Router's navigation hook
 
-export default function DashboardPage() {
+import Header from '@/components/Header';
+import Home from '@/components/Home';
+// import AboutUs from '@/components/AboutUs';
+// import HowToApply from '@/components/HowToApply';
+// import Categories from '@/components/Categories';
+// import ContactUs from '@/components/ContactUs';
+
+export default function Dashboard() {
   const router = useRouter();
-  const { isAuthenticated, user } = useSelector((state) => state.auth); // Get auth state from Redux
+  const { isAuthenticated } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    // If not authenticated, redirect to login
-    if (!isAuthenticated) {
-      router.replace('/login'); // Use replace to prevent back navigation
+    //  Client-side redirect fallback (extra protection)
+    if (typeof window !== 'undefined' && !isAuthenticated) {
+      router.push('/login');
     }
   }, [isAuthenticated, router]);
 
-  // Prevent flashing by showing nothing if not authenticated
-  if (!isAuthenticated) return null;
-
   return (
-    <main className="p-6">
-      <h1 className="text-3xl font-bold text-green-800">Job Portal V2 Dashboard</h1>
-      <p className="mt-2 text-gray-600">Welcome to the Job Portal V2 home page.</p>
-      <div className="mt-4 text-blue-700">
-        <p>Logged in as: {user?.email}</p> {/* Show user email */}
-      </div>
-    </main>
+    <div className="relative">
+      <Header />
+      <main className="pt-[80px]">
+        <section id="home">
+          <Home />
+        </section>
+        {/* <AboutUs />
+        <HowToApply />
+        <Categories />
+        <ContactUs /> */}
+      </main>
+    </div>
   );
 }
